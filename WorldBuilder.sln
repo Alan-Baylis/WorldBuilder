@@ -1,0 +1,23 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2008
+
+Project("{D3DE2B97-2FA5-694A-D1BF-6F9CC6BB9F39}") = "WorldBuilder", "Assembly-CSharp.csproj", "{90280C22-EEF2-A199-6224-FE825C67BDE5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{90280C22-EEF2-A199-6224-FE825C67BDE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90280C22-EEF2-A199-6224-FE825C67BDE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90280C22-EEF2-A199-6224-FE825C67BDE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90280C22-EEF2-A199-6224-FE825C67BDE5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Assembly-CSharp.csproj
+	EndGlobalSection
+EndGlobal
