@@ -13,15 +13,25 @@ public class MapGenerator : MonoBehaviour
 	[Range(0,100)]
 	public int randomFillPercent;
 
+	[Range(0,100)]
+	public int waterLevel;
+
 	int [,] map;
 
 	public int step = 12;
 	int prevStep;
 	//bool initial = true;
 
+	System.Random prng;
+
 	void Start()
 	{
 		prevStep = step;
+		if (useRandomSeed)
+		{
+			seed = Time.time.ToString ();
+		}
+		prng = new System.Random (seed.GetHashCode ());
 		GenerateMap ();
 	}
 
@@ -38,7 +48,15 @@ public class MapGenerator : MonoBehaviour
 	void GenerateMap()
 	{
 		map = new int[width, height];
+		for (int x = 0; x < width; ++x)
+		{
+			for (int y = 0; y < height; ++y)
+			{
+				map [x, y] = -1;
+			}
+		}
 		//RandomFillMap ();
+		//InitialStepFillMap();
 		StepFillMap ();
 		/*for (int i = 0; i < 5; ++i)
 		{
@@ -46,80 +64,137 @@ public class MapGenerator : MonoBehaviour
 		}*/
 	}
 
-	void StepFillMap()
+	void InitialStepFillMap()
 	{
-		if (step <= 0)
-			return;
-
-		if (useRandomSeed)
-		{
-			seed = Time.time.ToString ();
-		}
-
-		System.Random prng = new System.Random (seed.GetHashCode ());
-
+		// Random fill the initial square grid
 		for (int x = 0; x < width; x += step)
 		{
 			for (int y = 0; y < height; y += step)
 			{
-				if (step == prevStep) // We are on the initial run
-				{
-					if (x % step == 0 && y % step == 0)
-						map [x, y] = prng.Next (0, 100);
-					else
-						map [x, y] = 0;
-				} 
-				else
-				{
-					if (x % prevStep == 0 && y % prevStep == 0) // Done on the previous iteration
-						continue;
-					else if (x % prevStep == 0) // On a major column
-					{
-						//int next = y + step >= height ? y + step - height : y + step;
-						//int prev = y - step;
-						/*int next = y + step;
-						if (next >= height)
-						{
-							next -= height;
-							Debug.Log ("Next in x " + next);
-						}
-						int prev = y - step;
-						map [x, y] = (map [x, next] + map [x, prev]) / 2;*/
-					} else if (y % prevStep == 0) // On a major row
-					{
-						//int next = x + step >= width ? x + step - width : x + step;
-						//int prev = x - step;
-						/*int next = x + step;
-						if (next >= width)
-						{
-							next -= width;
-							Debug.Log ("Next in y " + next);
-						}
-						int prev = x - step;
-						map [x, y] = (map [next, y] + map [prev, y]) / 2;*/
-					} 
-					else // On a crossing diagonal
-					{
-						int nextY = y + step;
-						if (nextY >= height)
-						{
-							nextY -= height;
-						}
-						int prevY = y - step;
-						int nextX = x + step;
-						if (nextX >= width)
-						{
-							nextX -= width;
-						}
-						int prevX = x - step;
-						map [x, y] = (map [nextX, nextY] + map [nextX, prevY] + map [prevX, prevY] + map [prevX, nextY]) / 4;
-					}
-				}
+				//if (x % step == 0 && y % step == 0)
+					map [x, y] = prng.Next (0, 100);
+				//else
+				//	map [x, y] = 0;
+			}
+		}
+			
+		// Fill the square centres
+		for (int x = step/2; x < width; x += step)
+		{
+			for (int y = step/2; y < height; y += step)
+			{
+				//if (x % step == 0 && y % step == 0)
+					map [x, y] = prng.Next (0, 100);
+				//else
+				//	map [x, y] = 0;
 			}
 		}
 
 		prevStep = step;
 		step /= 2;
+	}
+
+	void StepFillMap()
+	{
+		// Initial steps
+		// Random fill the initial square grid
+		for (int x = 0; x < width; x += step)
+		{
+			for (int y = 0; y < height; y += step)
+			{
+				map [x, y] = prng.Next (0, 100);
+			}
+		}
+
+		// Fill the square centres
+		for (int x = step/2; x < width; x += step)
+		{
+			for (int y = step/2; y < height; y += step)
+			{
+				map [x, y] = prng.Next (0, 100);
+			}
+		}
+
+		//prevStep = step;
+		//step /= 2;
+
+
+		while (step > 0)
+		{
+			//if (step <= 0)
+			//	return;
+
+			for (int x = 0; x < width; x += step)
+			{
+				for (int y = 0; y < height; y += step)
+				{
+					
+					if (x % prevStep == 0 && y % prevStep == 0) // Done on the previous iteration
+						continue;
+					else if (x % prevStep == 0 || y % prevStep == 0) // On a major column or major row
+					{
+						if (map [x, y] == -1)
+						{
+							// Interpolate from the compass points
+							int nextY = y + step;
+							if (nextY >= height)
+								nextY -= height;
+
+							int prevY = y - step;
+							if (prevY < 0)
+								prevY += height;
+					
+							int nextX = x + step;
+							if (nextX >= width)
+								nextX -= width;
+					
+							int prevX = x - step;
+							if (prevX < 0)
+								prevX += width;
+					
+							map [x, y] = (map [nextX, y] + map [x, nextY] + map [prevX, y] + map [x, prevY]) / 4;
+						}
+					} else // On a crossing diagonal
+					{
+					
+					
+					}
+				}
+			}
+
+			prevStep = step;
+			step /= 2;
+
+			// Fill the square centres
+			for (int x = step; x < width; x += prevStep)
+			{
+				for (int y = step; y < height; y += prevStep)
+				{
+					if (map [x, y] == -1)
+					{
+						//Debug.Log ("Diag " + x + " " + y + ": " + map [x, y]);
+						// Interpolate from the four corner points
+						int nextY = y + step;
+						if (nextY >= height)
+							nextY -= height;
+
+						int prevY = y - step;
+						if (prevY < 0)
+							prevY += height;
+
+						int nextX = x + step;
+						if (nextX >= width)
+							nextX -= width;
+
+						int prevX = x - step;
+						if (prevX < 0)
+							prevX += width;
+					
+						map [x, y] = (map [nextX, nextY] + map [nextX, prevY] + map [prevX, prevY] + map [prevX, nextY]) / 4;
+					}
+				}
+			}
+		}
 	}
 
 
@@ -238,8 +313,13 @@ public class MapGenerator : MonoBehaviour
 			{
 				for (int y = 0; y < height; ++y)
 				{
-					float scale = 1f - (map [x, y] / 100f);
-					Gizmos.color = new Color (scale, scale, scale); //map [x, y] == 1 ? Color.black : Color.white;
+					if (map [x, y] <= waterLevel)
+						Gizmos.color = Color.blue;
+					else
+					{
+						float scale = 1f - (map [x, y] / 100f);
+						Gizmos.color = new Color (scale, scale, scale); //map [x, y] == 1 ? Color.black : Color.white;
+					}
 					Vector3 pos = new Vector3 (-width / 2 + x + .5f, 0, -height / 2 + y + .5f);
 					Gizmos.DrawCube (pos, Vector3.one);
 				}
