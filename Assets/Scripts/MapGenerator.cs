@@ -4,27 +4,65 @@ using System.Collections;
 public class MapGenerator : MonoBehaviour 
 {
 
-	public int width;
-	public int height;
+	int width;
+	int height;
 
 	public string seed;
 	public bool useRandomSeed;
 
-	[Range(0,100)]
-	public int randomFillPercent;
+	//[Range(0,100)]
+	//public int randomFillPercent;
 
-	[Range(0,100)]
-	public int waterLevel;
+
+
+	//public GameObject mapTile;
 
 	int [,] map;
+	//GameObject[,] tiles;
 
 	public int step = 12;
 	int prevStep;
-	//bool initial = true;
+	public int prevWaterLevel;
 
 	System.Random prng;
 
 	void Start()
+	{
+		/*prevStep = step;
+		if (useRandomSeed)
+		{
+			seed = Time.time.ToString ();
+		}
+		prng = new System.Random (seed.GetHashCode ());
+
+		map = new int[width, height];
+		//tiles = new GameObject[width, height];
+
+		prevWaterLevel = waterLevel;
+
+		GenerateMap ();*/
+		//Instantiate(mapTile, new Vector3(0, 0, 0), Quaternion.Euler(90f, 0f, 0f));
+	}
+
+	/*void Update ()
+	{
+		if (waterLevel != prevWaterLevel)
+		{
+			for (int x = 0; x < width; ++x)
+			{
+				for (int y = 0; y < height; ++y)
+				{
+					if (map [x, y] <= waterLevel)
+						tiles [x, y].GetComponent<Renderer> ().materials [0].color = Color.blue;
+					else
+						setColorFromHeight (map [x, y], tiles [x, y]);
+				}
+			}
+		}
+	}*/
+
+
+	public int [,] GenerateMap(int width, int height)
 	{
 		prevStep = step;
 		if (useRandomSeed)
@@ -32,27 +70,20 @@ public class MapGenerator : MonoBehaviour
 			seed = Time.time.ToString ();
 		}
 		prng = new System.Random (seed.GetHashCode ());
-		GenerateMap ();
-	}
 
-	void Update ()
-	{
-		if (Input.GetMouseButtonDown (0))
-		{
-			//GenerateMap ();
-			//SmoothMap ();
-			StepFillMap ();
-		}
-	}
-
-	void GenerateMap()
-	{
+		this.width = width;
+		this.height = height;
 		map = new int[width, height];
+		//tiles = new GameObject[width, height];
+
+		//prevWaterLevel = waterLevel;
+		
 		for (int x = 0; x < width; ++x)
 		{
 			for (int y = 0; y < height; ++y)
 			{
 				map [x, y] = -1;
+				//tiles [x, y] = (GameObject) Instantiate(mapTile, new Vector3(x, 0, y), Quaternion.Euler(90f, 0f, 0f));
 			}
 		}
 		//RandomFillMap ();
@@ -62,6 +93,8 @@ public class MapGenerator : MonoBehaviour
 		{
 			SmoothMap ();
 		}*/
+
+		return map;
 	}
 
 	void InitialStepFillMap()
@@ -103,6 +136,9 @@ public class MapGenerator : MonoBehaviour
 			for (int y = 0; y < height; y += step)
 			{
 				map [x, y] = prng.Next (0, 100);
+				//setColorFromHeight (map [x, y], tiles [x, y]);
+				//Material mat = tiles [x, y].GetComponent<Material>();
+				//mat.color = colorFromHeight(map [x, y]);
 			}
 		}
 
@@ -112,6 +148,7 @@ public class MapGenerator : MonoBehaviour
 			for (int y = step/2; y < height; y += step)
 			{
 				map [x, y] = prng.Next (0, 100);
+				//setColorFromHeight (map [x, y], tiles [x, y]);
 			}
 		}
 
@@ -153,6 +190,7 @@ public class MapGenerator : MonoBehaviour
 								prevX += width;
 					
 							map [x, y] = (map [nextX, y] + map [x, nextY] + map [prevX, y] + map [x, prevY]) / 4;
+							//setColorFromHeight (map [x, y], tiles [x, y]);
 						}
 					} else // On a crossing diagonal
 					{
@@ -191,11 +229,30 @@ public class MapGenerator : MonoBehaviour
 							prevX += width;
 					
 						map [x, y] = (map [nextX, nextY] + map [nextX, prevY] + map [prevX, prevY] + map [prevX, nextY]) / 4;
+						//setColorFromHeight (map [x, y], tiles [x, y]);
 					}
 				}
 			}
 		}
 	}
+
+	void setColorFromHeight(int height, GameObject tile)
+	{
+		Renderer rend = tile.GetComponent<Renderer> ();
+		//Debug.Log (rend.ToString ());
+
+		//Material mat = rend.GetComponent<Material>();
+		//Debug.Log (mat.ToString ());
+		rend.materials[0].color = colorFromHeight(height);
+	}
+
+	Color colorFromHeight(int height)
+	{
+		float greyscale = 1f - (height / 100f);
+		return new Color (greyscale, greyscale, greyscale);
+	}
+
+
 
 
 	void RandomFillMap ()
@@ -217,25 +274,20 @@ public class MapGenerator : MonoBehaviour
 	}
 
 
-	void SmoothMap ()
+	/*void SmoothMap ()
 	{
 		for (int x = 0; x < width; ++x)
 		{
 			for (int y = 0; y < height; ++y)
 			{
 				map [x, y] = AverageOfSurrounding (x, y);
-				/*int neighboursHigher = NumberSurroundingHigher (x, y);
 
-				if (neighboursHigher > 4)
-					map [x, y] = Mathf.Min(map[x,y] + 10, 100);
-				else if (neighboursHigher < 4)
-					map [x, y] = Mathf.Max(map[x,y] - 10, 0);
-				*/
+				
 			}
 		}
-	}
+	}*/
 
-	int AverageOfSurrounding (int gridX, int gridY)
+	/*int AverageOfSurrounding (int gridX, int gridY)
 	{
 		int average = 0;
 
@@ -254,10 +306,10 @@ public class MapGenerator : MonoBehaviour
 		}
 
 		return average / 9;
-	}
+	}*/
 
 
-	int NumberSurroundingHigher(int gridX, int gridY)
+	/*int NumberSurroundingHigher(int gridX, int gridY)
 	{
 		int numHigher = 0;
 
@@ -279,9 +331,9 @@ public class MapGenerator : MonoBehaviour
 		}
 
 		return numHigher;
-	}
+	}*/
 
-	int GetSurroundingWallCount (int gridX, int gridY)
+	/*int GetSurroundingWallCount (int gridX, int gridY)
 	{
 		int wallCount = 0;
 		for (int neighbourX = gridX - 1; neighbourX <= gridX + 1; ++neighbourX)
@@ -303,9 +355,9 @@ public class MapGenerator : MonoBehaviour
 		}
 
 		return wallCount;
-	}
+	}*/
 
-	void OnDrawGizmos ()
+	/*void OnDrawGizmos ()
 	{
 		if (map != null)
 		{
@@ -325,5 +377,5 @@ public class MapGenerator : MonoBehaviour
 				}
 			}
 		}
-	}
+	}*/
 }
