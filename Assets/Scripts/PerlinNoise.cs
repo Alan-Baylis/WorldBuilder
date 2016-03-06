@@ -5,7 +5,10 @@
 
 /**
  * Code from devmag.org.za/2009/04/25/perlin-noise by Hermann Tulleken.
- * Modified slightly.
+ * Modified slightly:
+ * - to account for API changes (e.g. no Color.FromArgb anymore)
+ * - to wrap around terrain at the poles correctly (not top-to-bottom but "circular"
+ *   at the top)
  */
 
 using System;
@@ -156,16 +159,42 @@ namespace PerlinNoise
 
             for (int i = 0; i < width; i++)
             {
+				int i0_j0, i0_j1, i1_j0, i1_j1;
+
                 //calculate the horizontal sampling indices
                 int sample_i0 = (i / samplePeriod) * samplePeriod;
                 int sample_i1 = (sample_i0 + samplePeriod) % width; //wrap around
+
+				i0_j0 = i0_j1 = sample_i0;
+				i1_j0 = i1_j1 = sample_i1;
                 float horizontal_blend = (i - sample_i0) * sampleFrequency;
 
                 for (int j = 0; j < height; j++)
                 {
                     //calculate the vertical sampling indices
                     int sample_j0 = (j / samplePeriod) * samplePeriod;
-                    int sample_j1 = (sample_j0 + samplePeriod) % height; //wrap around
+					int sample_j1 = (sample_j0 + samplePeriod);
+
+                    //int sample_j1 = (sample_j0 + samplePeriod) % height; //wrap around
+					// The height wrapping is now polar. E.g. on a 256 wide by 128 high map, the 
+					// top left 0,0 would wrap vertically to 256,0 instead of 0,128
+
+					// Correctly wrap vertically
+					if (sample_j1 >= height)
+					{
+						// How much the vertical wraps around
+						int diff = sample_j1 % height;
+						sample_j1 = height - (diff + 1);
+
+						// Wrap the horizontal points around the centre
+						diff = sample_i0 - width / 2;
+						diff = diff < 0 ? diff + 1 : diff - 1; // Reduce difference by 1
+						i0_j1 = width / 2 + (-diff);
+
+						diff = sample_i1 - width / 2;
+						diff = diff < 0 ? diff + 1 : diff - 1; // Reduce difference by 1
+						i1_j1 = width / 2 + (-diff);
+					}
                     float vertical_blend = (j - sample_j0) * sampleFrequency;
 
                     //blend the top two corners
@@ -173,8 +202,8 @@ namespace PerlinNoise
                         baseNoise[sample_i1][sample_j0], horizontal_blend);
 
                     //blend the bottom two corners
-                    float bottom = Interpolate(baseNoise[sample_i0][sample_j1],
-                        baseNoise[sample_i1][sample_j1], horizontal_blend);
+                    float bottom = Interpolate(baseNoise[i0_j1][sample_j1],
+                        baseNoise[i1_j1][sample_j1], horizontal_blend);
 
                     //final blend
                     smoothNoise[i][j] = Interpolate(top, bottom, vertical_blend);                    

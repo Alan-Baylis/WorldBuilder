@@ -18,18 +18,20 @@ public class TileMap : MonoBehaviour {
 
 	int heightRange = 256;
 	[Range(0,256)]
-	public int waterLevel;
+	public int waterLevel = 150;
 	int prevWaterLevel;
 
-	MapGenerator mapGen;
+	World world;
 
-	int [,] map;
+
+	//int [,] map;
 	
 	// Use this for initialization
 	void Start () {
 
-		mapGen = GetComponent<MapGenerator> ();
-		map = mapGen.GenerateMap (size_x, size_z, heightRange);
+		world = GetComponent<World> ();
+		//map = 
+		world.GenerateHeightMap (size_x, size_z, heightRange);
 		BuildMesh();
 	}
 
@@ -38,6 +40,13 @@ public class TileMap : MonoBehaviour {
 		if (waterLevel != prevWaterLevel)
 		{
 			prevWaterLevel = waterLevel;
+			BuildTexture ();
+		}
+
+		if (Input.GetMouseButtonDown(0))
+		{
+			Debug.Log ("Smoothing map");
+			world.SmoothMap (waterLevel);
 			BuildTexture ();
 		}
 	}
@@ -57,7 +66,8 @@ public class TileMap : MonoBehaviour {
 				//if (map [x, y] <= waterLevel)
 				//	c = Color.blue;
 				//else
-					c = colorFromHeight (map [x, y]);
+				//	c = colorFromHeight (world.heightMap [x, y]);
+				c = world.biomeFromLatitude (x, y, waterLevel);
 				
 				texture.SetPixel (x, y, c);
 				//Debug.Log ("Tile " + x + ", " + y + ": " + map [x, y]);
