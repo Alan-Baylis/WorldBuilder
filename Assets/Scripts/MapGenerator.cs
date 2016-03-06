@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using pn = PerlinNoise.PerlinNoise;
 
 public class MapGenerator : MonoBehaviour 
 {
@@ -9,10 +10,12 @@ public class MapGenerator : MonoBehaviour
 
 	public string seed;
 	public bool useRandomSeed;
+	public bool usePerlinNoise;
 
+	public int perlinOctaves = 6;
 	//[Range(0,100)]
 	//public int randomFillPercent;
-
+	public int step = 16;
 
 
 	//public GameObject mapTile;
@@ -20,9 +23,9 @@ public class MapGenerator : MonoBehaviour
 	int [,] map;
 	//GameObject[,] tiles;
 
-	public int step = 12;
+	int numLevels = 128;
 	int prevStep;
-	public int prevWaterLevel;
+	//public int prevWaterLevel;
 
 	System.Random prng;
 
@@ -62,9 +65,8 @@ public class MapGenerator : MonoBehaviour
 	}*/
 
 
-	public int [,] GenerateMap(int width, int height)
+	public int [,] GenerateMap(int width, int height, int numLevels)
 	{
-		prevStep = step;
 		if (useRandomSeed)
 		{
 			seed = Time.time.ToString ();
@@ -73,26 +75,37 @@ public class MapGenerator : MonoBehaviour
 
 		this.width = width;
 		this.height = height;
+		this.numLevels = numLevels;
 		map = new int[width, height];
-		//tiles = new GameObject[width, height];
 
-		//prevWaterLevel = waterLevel;
-		
 		for (int x = 0; x < width; ++x)
 		{
 			for (int y = 0; y < height; ++y)
 			{
 				map [x, y] = -1;
-				//tiles [x, y] = (GameObject) Instantiate(mapTile, new Vector3(x, 0, y), Quaternion.Euler(90f, 0f, 0f));
 			}
 		}
-		//RandomFillMap ();
-		//InitialStepFillMap();
-		StepFillMap ();
-		/*for (int i = 0; i < 5; ++i)
+
+
+		if (usePerlinNoise)
 		{
-			SmoothMap ();
-		}*/
+			float[][] perlinMap = pn.GeneratePerlinNoise (
+				                  pn.GenerateWhiteNoise (width, height, prng),
+				                  perlinOctaves);
+
+			for (int x = 0; x < width; ++x)
+			{
+				for (int y = 0; y < height; ++y)
+				{
+					map [x, y] = (int)(perlinMap[x][y] * numLevels);
+				}
+			}
+		} 
+		else
+		{
+			prevStep = step;
+			StepFillMap ();
+		}
 
 		return map;
 	}
@@ -105,7 +118,7 @@ public class MapGenerator : MonoBehaviour
 			for (int y = 0; y < height; y += step)
 			{
 				//if (x % step == 0 && y % step == 0)
-					map [x, y] = prng.Next (0, 100);
+				map [x, y] = prng.Next (0, numLevels);
 				//else
 				//	map [x, y] = 0;
 			}
@@ -117,7 +130,7 @@ public class MapGenerator : MonoBehaviour
 			for (int y = step/2; y < height; y += step)
 			{
 				//if (x % step == 0 && y % step == 0)
-					map [x, y] = prng.Next (0, 100);
+				map [x, y] = prng.Next (0, numLevels);
 				//else
 				//	map [x, y] = 0;
 			}
@@ -135,7 +148,7 @@ public class MapGenerator : MonoBehaviour
 		{
 			for (int y = 0; y < height; y += step)
 			{
-				map [x, y] = prng.Next (0, 100);
+				map [x, y] = prng.Next (0, numLevels);
 				//setColorFromHeight (map [x, y], tiles [x, y]);
 				//Material mat = tiles [x, y].GetComponent<Material>();
 				//mat.color = colorFromHeight(map [x, y]);
@@ -147,7 +160,7 @@ public class MapGenerator : MonoBehaviour
 		{
 			for (int y = step/2; y < height; y += step)
 			{
-				map [x, y] = prng.Next (0, 100);
+				map [x, y] = prng.Next (0, numLevels);
 				//setColorFromHeight (map [x, y], tiles [x, y]);
 			}
 		}
@@ -248,7 +261,7 @@ public class MapGenerator : MonoBehaviour
 
 	Color colorFromHeight(int height)
 	{
-		float greyscale = 1f - (height / 100f);
+		float greyscale = 1f - (height / (float)numLevels);
 		return new Color (greyscale, greyscale, greyscale);
 	}
 
@@ -268,7 +281,7 @@ public class MapGenerator : MonoBehaviour
 		{
 			for (int y = 0; y < height; ++y)
 			{
-				map [x, y] = prng.Next (0, 100);// < randomFillPercent ? 1 : 0;
+				map [x, y] = prng.Next (0, numLevels);// < randomFillPercent ? 1 : 0;
 			}
 		}
 	}

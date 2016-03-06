@@ -16,7 +16,8 @@ public class TileMap : MonoBehaviour {
 	public int size_z = 16;
 	public float tileSize = 1.0f;
 
-	[Range(0,100)]
+	int heightRange = 256;
+	[Range(0,256)]
 	public int waterLevel;
 	int prevWaterLevel;
 
@@ -28,7 +29,7 @@ public class TileMap : MonoBehaviour {
 	void Start () {
 
 		mapGen = GetComponent<MapGenerator> ();
-		map = mapGen.GenerateMap (size_x, size_z);
+		map = mapGen.GenerateMap (size_x, size_z, heightRange);
 		BuildMesh();
 	}
 
@@ -142,7 +143,7 @@ public class TileMap : MonoBehaviour {
 		} 
 		else
 		{
-			float g = 1f - (height / 100f);
+			float g = 1f - (height / (float)heightRange);
 			c = new Color (g, g, g);
 		}
 		return c;
