@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using pn = PerlinNoise.PerlinNoise;
 
 public class World : MonoBehaviour 
@@ -458,10 +459,14 @@ public class World : MonoBehaviour
 
 	public ArrayList getMountain(int x, int y, int waterLevel)
 	{
-        ArrayList extent = new ArrayList();
+        //ArrayList extent = new ArrayList();
+        Grid extent = new Grid(x, y, heightMap[x, y]);
         int range = 1;
         int avgAboveWater = averageHeightAboveWater(waterLevel);
 
+        //extent.Add(new Vector2(x, y));
+
+        Debug.Log("avgAbove " + avgAboveWater);
         while(true)
         {
             bool atLeastOne = false;
@@ -469,25 +474,29 @@ public class World : MonoBehaviour
             {
                 for (int offsetY = -range; offsetY <= +range; ++offsetY)
                 {
-                    if (offsetX != -range || offsetY != +range)
-                        continue;
-
-                    int indX = x + offsetX;
-                    int indY = y + offsetY;
-
-                    if (heightMap[indX, indY] > avgAboveWater)
+                    if (offsetX == -range || offsetX == +range ||
+                        offsetY == -range || offsetY == +range)
                     {
-                        extent.Add(new Vector2(x, y));
-                        atLeastOne = true;
+                        int indX = x + offsetX;
+                        int indY = y + offsetY;
+
+                        if (heightMap[indX, indY] > avgAboveWater)
+                        {
+                            //extent.Add(new Vector2(indX, indY));
+                            extent.addNode(offsetX, offsetY, heightMap[indX, indY]);
+                            atLeastOne = true;
+                        }
                     }
                 }
             }
 
-            if (atLeastOne == false)
+            if (range >= 2 || atLeastOne == false)
                 break;
+
+            ++range;
         }
 
-        return extent;
+        return extent.toArrayList();
 	}
 
 
@@ -512,4 +521,176 @@ public class World : MonoBehaviour
 		//Debug.Log ("Water " + waterLevel + ", avg " + avg);
 		return avg;
 	}
+
+
+    /// Grid for storing (atm) mountain extent data
+    protected class Grid
+    {
+        // GridNodes are indexed by their "local" offset from the Grid origin, e.g. -1, 1.
+        Dictionary<Vector2, GridNode> elements;
+
+        int originX, originY;
+
+
+        static Vector2 NW = new Vector2(-1, -1);
+        static Vector2 NORTH = new Vector2(0, -1);
+        static Vector2 NE = new Vector2(1, -1);
+        static Vector2 EAST = new Vector2(1, 0);
+        static Vector2 SE = new Vector2(1, 1);
+        static Vector2 SOUTH = new Vector2(0, 1);
+        static Vector2 SW = new Vector2(-1, 1);
+        static Vector2 WEST = new Vector2(-1, 0);
+        static Vector2[] compassDirections = { NORTH, NE, EAST, SE, SOUTH, SW, WEST, NW };
+
+        public Grid(int x, int y, int height)
+        {
+            originX = x;
+            originY = y;
+            elements = new Dictionary<Vector2, GridNode>();
+
+            elements.Add(
+                new Vector2(0, 0),
+                new GridNode(x, y, 0, 0, height)
+                );
+        }
+
+
+
+        public void addNode(int offsetX, int offsetY, int height)
+        {
+            Vector2 nodePos = new Vector2(offsetX, offsetY);
+            GridNode addedNode = new GridNode(originX + offsetX, originY + offsetY, offsetX, offsetY, height);
+            elements.Add(nodePos, addedNode);
+            
+            foreach (Vector2 direction in Grid.compassDirections)
+            {
+                GridNode neighbour;
+                Vector2 neighbourPos = nodePos + direction;
+                if (elements.TryGetValue(neighbourPos, out neighbour))
+                {
+                    //Debug.Log(nodePos.ToString() + " neighbour at " + neighbourPos.ToString());
+                    addedNode.addNeighbour(direction, neighbour);
+                    //Debug.Log("Adding reciprocal " + neighbourPos.ToString() + " in " + (-direction).ToString());
+                    neighbour.addNeighbour(-direction, addedNode);
+                }
+            }
+        }
+
+
+        public ArrayList toArrayList()
+        {
+            ArrayList list = new ArrayList();
+            foreach (GridNode g in elements.Values)
+            {
+                list.Add(new Vector2(g.globalX, g.globalY));
+                Debug.Log(g.toString());
+            }
+
+            return list;
+        }
+
+
+
+        protected class GridNode
+        {
+            GridNode[] neighbours;
+
+            public int globalX { get; protected set; }
+            public int globalY { get; protected set; }
+
+            public int localX { get; protected set; } // Offset from the "origin" (mountain peak)
+            public int localY { get; protected set; } // Offset from the "origin" (mountain peak)
+
+            public int height { get; protected set; }
+
+
+            public GridNode NORTH
+            {
+                get { return (GridNode)neighbours[0]; }
+                set { neighbours[0] = value; }
+            }
+            public GridNode NE
+            {
+                get { return (GridNode)neighbours[1]; }
+                set { neighbours[1] = value; }
+            }
+            public GridNode EAST
+            {
+                get { return (GridNode)neighbours[2]; }
+                set { neighbours[2] = value; }
+            }
+            public GridNode SE
+            {
+                get { return (GridNode)neighbours[3]; }
+                set { neighbours[3] = value; }
+            }
+            public GridNode SOUTH
+            {
+                get { return (GridNode)neighbours[4]; }
+                set { neighbours[4] = value; }
+            }
+            public GridNode SW
+            {
+                get { return (GridNode)neighbours[5]; }
+                set { neighbours[5] = value; }
+            }
+            public GridNode WEST
+            {
+                get { return (GridNode)neighbours[6]; }
+                set { neighbours[6] = value; }
+            }
+            public GridNode NW
+            {
+                get { return (GridNode)neighbours[7]; }
+                set { neighbours[7] = value; }
+            }
+
+
+            public GridNode(int globalX, int globalY, int localX, int localY, int height)
+            {
+                neighbours = new GridNode[8];
+                this.globalX = globalX;
+                this.globalY = globalY;
+                this.localX = localX;
+                this.localY = localY;
+                this.height = height;
+            }
+
+            public void addNeighbour(Vector2 direction, GridNode neighbour)
+            {
+                //Debug.Log("Size " + neighbours.Capacity);
+                if (direction.Equals(Grid.NORTH))
+                    this.NORTH = neighbour;
+                else if (direction.Equals(Grid.NE))
+                    this.NE = neighbour;
+                else if (direction.Equals(Grid.EAST))
+                    this.EAST = neighbour;
+                else if (direction.Equals(Grid.SE))
+                    this.SE = neighbour;
+                else if (direction.Equals(Grid.SOUTH))
+                    this.SOUTH = neighbour;
+                else if (direction.Equals(Grid.SW))
+                    this.SW = neighbour;
+                else if (direction.Equals(Grid.WEST))
+                    this.WEST = neighbour;
+                else if (direction.Equals(Grid.NW))
+                    this.NW = neighbour;
+            }
+
+
+            public string toString()
+            {
+                int numNeighbours = 0;
+                foreach (GridNode g in this.neighbours)
+                {
+                    if (g != null)
+                        ++numNeighbours;
+                }
+                string str = string.Format("Node {0},{1} (local {2},{3}), height {4} has {5} neighbours",
+                    this.globalX, this.globalY, this.localX, this.localY, this.height, numNeighbours);
+
+                return str;
+            }
+        }
+    }
 }
