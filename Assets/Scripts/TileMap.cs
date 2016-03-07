@@ -22,7 +22,7 @@ public class TileMap : MonoBehaviour {
 	int prevWaterLevel;
 
 	World world;
-
+    bool mount = false;
 
 	//int [,] map;
 	
@@ -45,9 +45,12 @@ public class TileMap : MonoBehaviour {
 
 		if (Input.GetMouseButtonDown(0))
 		{
-			Debug.Log ("Smoothing map");
+			//Debug.Log ("Smoothing map");
 			world.SmoothMap (waterLevel);
+			//world.CreateMountainRanges (waterLevel);
+            mount = true;
 			BuildTexture ();
+
 		}
 	}
 
@@ -66,20 +69,33 @@ public class TileMap : MonoBehaviour {
 				//if (map [x, y] <= waterLevel)
 				//	c = Color.blue;
 				//else
-				//	c = colorFromHeight (world.heightMap [x, y]);
-				c = world.biomeFromLatitude (x, y, waterLevel);
+				c = colorFromHeight (world.heightMap [x, y]);
+				//c = world.biomeFromLatitude (x, y, waterLevel);
 				
 				texture.SetPixel (x, y, c);
 				//Debug.Log ("Tile " + x + ", " + y + ": " + map [x, y]);
+
 			}
 		}
+
+        if (mount)
+        {
+            Debug.Log("Coloring mountain");
+            ArrayList mountain = world.getMountain(64, 32, waterLevel);
+            foreach (Vector2 loc in mountain)
+            {
+                texture.SetPixel((int)loc.x, (int)loc.y, Color.magenta);
+            } 
+        }
+
+
 		texture.filterMode = FilterMode.Point;
 		texture.Apply ();
 
 		MeshRenderer mesh_renderer = GetComponent<MeshRenderer> ();
 		mesh_renderer.sharedMaterials [0].mainTexture = texture;
 
-		//Debug.Log ("Done Textures!");
+		world.averageHeightAboveWater (waterLevel);
 	}
 	
 	public void BuildMesh() {
@@ -106,7 +122,7 @@ public class TileMap : MonoBehaviour {
 				uv[ z * vsize_x + x ] = new Vector2( (float)x / vsize_x, (float)z / vsize_z );
 			}
 		}
-		Debug.Log ("Done Verts!");
+		//Debug.Log ("Done Verts!");
 		
 		for(z=0; z < size_z; z++) {
 			for(x=0; x < size_x; x++) {
@@ -122,7 +138,7 @@ public class TileMap : MonoBehaviour {
 			}
 		}
 		
-		Debug.Log ("Done Triangles!");
+		//Debug.Log ("Done Triangles!");
 		
 		// Create a new Mesh and populate with the data
 		Mesh mesh = new Mesh();
@@ -138,7 +154,7 @@ public class TileMap : MonoBehaviour {
 		
 		mesh_filter.mesh = mesh;
 		mesh_collider.sharedMesh = mesh;
-		Debug.Log ("Done Mesh!");
+		//Debug.Log ("Done Mesh!");
 
 		BuildTexture ();
 	}
