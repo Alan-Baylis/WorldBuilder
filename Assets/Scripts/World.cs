@@ -471,7 +471,10 @@ public class World : MonoBehaviour
 
         Debug.Log("avgAbove " + avgAboveWater);
 
-        extent.GrowFrom(extent.origin, (height) => height > avgAboveWater, heightMap);
+        extent.GrowFrom(extent.origin, (height) => height > 200, heightMap);
+
+        
+
         
         /*while(true)
         {
@@ -512,6 +515,33 @@ public class World : MonoBehaviour
 	}
 
 
+    public void ShrinkMountain(int x, int y, int waterLevel)
+    {
+        Grid.GridNode tmp;
+        Grid extent = new Grid(x, y, heightMap[x, y]);
+        extent.GrowFrom(extent.origin, (height) => height > 200, heightMap);
+
+        // Shrink the mountain
+        // Head north until reaching an edge
+        Grid.GridNode current = extent.origin;
+        while (true)
+        {
+            tmp = extent.travel(current, Grid.NORTH);
+            if (tmp != null)
+                current = tmp;
+            else
+                break;
+        }
+
+        Grid.GridNode start = current;
+        // Go around the edge of the mountain
+        while (true)
+        {
+            
+        }
+    }
+
+
 
 	public int averageHeightAboveWater(int waterLevel)
 	{
@@ -546,15 +576,15 @@ public class World : MonoBehaviour
 
         public GridNode origin { get; protected set; }
 
-        static Vector2 NW = new Vector2(-1, -1);
-        static Vector2 NORTH = new Vector2(0, -1);
-        static Vector2 NE = new Vector2(1, -1);
-        static Vector2 EAST = new Vector2(1, 0);
-        static Vector2 SE = new Vector2(1, 1);
-        static Vector2 SOUTH = new Vector2(0, 1);
-        static Vector2 SW = new Vector2(-1, 1);
-        static Vector2 WEST = new Vector2(-1, 0);
-        static Vector2[] compassDirections = { NORTH, NE, EAST, SE, SOUTH, SW, WEST, NW };
+        public static Vector2 NW = new Vector2(-1, -1);
+        public static Vector2 NORTH = new Vector2(0, -1);
+        public static Vector2 NE = new Vector2(1, -1);
+        public static Vector2 EAST = new Vector2(1, 0);
+        public static Vector2 SE = new Vector2(1, 1);
+        public static Vector2 SOUTH = new Vector2(0, 1);
+        public static Vector2 SW = new Vector2(-1, 1);
+        public static Vector2 WEST = new Vector2(-1, 0);
+        public static Vector2[] compassDirections = { NORTH, NE, EAST, SE, SOUTH, SW, WEST, NW };
 
         public Grid(int x, int y, int height)
         {
@@ -661,6 +691,27 @@ public class World : MonoBehaviour
             //Debug.Log(node.toString());
         }
 
+        public GridNode travel(GridNode from, Vector2 direction)
+        {
+            if (direction.Equals(Grid.NORTH))
+                return from.NORTH;
+            else if (direction.Equals(Grid.NE))
+                return from.NE;
+            else if (direction.Equals(Grid.EAST))
+                return from.EAST;
+            else if (direction.Equals(Grid.SE))
+                return from.SE;
+            else if (direction.Equals(Grid.SOUTH))
+                return from.SOUTH;
+            else if (direction.Equals(Grid.SW))
+                return from.SW;
+            else if (direction.Equals(Grid.WEST))
+                return from.WEST;
+            else if (direction.Equals(Grid.NW))
+                return from.NW;
+
+            return null;
+        }
 
         
         //----------------------------------------------------------------------------------
@@ -751,6 +802,51 @@ public class World : MonoBehaviour
                 else if (direction.Equals(Grid.NW))
                     this.NW = neighbour;
             }
+
+            public GridNode GetNeighbour(Vector2 direction)
+            {
+                return neighbours[DirectionToIndex(direction)];
+            }
+
+            public bool HasNeighbour(Vector2 direction)
+            {
+                return neighbours[DirectionToIndex(direction)] != null;
+            }
+
+            public static int DirectionToIndex(Vector2 direction)
+            {
+                if (direction.Equals(Grid.NORTH))
+                    return 0;
+                else if (direction.Equals(Grid.NE))
+                    return 1;
+                else if (direction.Equals(Grid.EAST))
+                    return 2;
+                else if (direction.Equals(Grid.SE))
+                    return 3;
+                else if (direction.Equals(Grid.SOUTH))
+                    return 4;
+                else if (direction.Equals(Grid.SW))
+                    return 5;
+                else if (direction.Equals(Grid.WEST))
+                    return 6;
+                else if (direction.Equals(Grid.NW))
+                    return 7;
+
+                return -1;
+            }
+
+            public GridNode TravelClockwise(Vector2 directionFrom)
+            {
+                int dirIndex = DirectionToIndex(directionFrom);
+                dirIndex = dirIndex + 2 % 8; // dirIndex + 1 would be accesable from the current node
+                while (this.HasNeighbour(compassDirections[dirIndex]) == false)
+                {
+                    ++dirIndex;
+                }
+                return neighbours[dirIndex];
+            }
+
+
 
 
             public string toString()

@@ -33,6 +33,7 @@ public class TileMap : MonoBehaviour {
 		//map = 
 		world.GenerateHeightMap (size_x, size_z, heightRange);
 		BuildMesh();
+        world.SmoothMap(waterLevel);
 	}
 
 	void Update ()
@@ -46,12 +47,17 @@ public class TileMap : MonoBehaviour {
 		if (Input.GetMouseButtonDown(0))
 		{
 			//Debug.Log ("Smoothing map");
-			world.SmoothMap (waterLevel);
+			
 			//world.CreateMountainRanges (waterLevel);
             mount = true;
 			BuildTexture ();
 
 		}
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            world.ShrinkMountain(64, 32, waterLevel);
+        }
 	}
 
 	void BuildTexture()
@@ -88,6 +94,7 @@ public class TileMap : MonoBehaviour {
             {
                 texture.SetPixel((int)loc.x, (int)loc.y, Color.magenta);
             } 
+
         }
 
 
