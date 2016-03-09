@@ -60,6 +60,8 @@ public class TileMap : MonoBehaviour {
 		int texHeight = size_z;
 		Texture2D texture = new Texture2D (texWidth, texHeight);
 
+        //Debug.Log("Texture: " + texWidth + " x " + texHeight);
+
 		for (int y = 0; y < texHeight; ++y)
 		{
 			for (int x = 0; x < texWidth; ++x)
@@ -73,7 +75,7 @@ public class TileMap : MonoBehaviour {
 				//c = world.biomeFromLatitude (x, y, waterLevel);
 				
 				texture.SetPixel (x, y, c);
-				//Debug.Log ("Tile " + x + ", " + y + ": " + map [x, y]);
+                //Debug.Log("Tile " + x + ", " + y + ": " + world.heightMap [x, y]);
 
 			}
 		}
@@ -119,7 +121,8 @@ public class TileMap : MonoBehaviour {
 			for(x=0; x < vsize_x; x++) {
 				vertices[ z * vsize_x + x ] = new Vector3( x*tileSize, 0, z*tileSize );
 				normals[ z * vsize_x + x ] = Vector3.up;
-				uv[ z * vsize_x + x ] = new Vector2( (float)x / vsize_x, (float)z / vsize_z );
+				//uv[ z * vsize_x + x ] = new Vector2( (float)x / vsize_x, (float)z / vsize_z );
+                uv[z * vsize_x + x] = new Vector2((float)x / size_x, (float)z / size_z);
 			}
 		}
 		//Debug.Log ("Done Verts!");

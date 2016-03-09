@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using pn = PerlinNoise.PerlinNoise;
 
 public class World : MonoBehaviour 
@@ -62,6 +63,8 @@ public class World : MonoBehaviour
 		this.width = width;
 		this.height = height;
 		this.heightRange = numLevels;
+
+        //Debug.Log("Size: " + width + " x " + height);
 
 		equator_i = height / 2;
 		north_15_i = equator_i - height / 12;
@@ -462,23 +465,30 @@ public class World : MonoBehaviour
         //ArrayList extent = new ArrayList();
         Grid extent = new Grid(x, y, heightMap[x, y]);
         int range = 1;
-        int avgAboveWater = averageHeightAboveWater(waterLevel);
+        int avgAboveWater = averageHeightAboveWater(waterLevel) + 10;
 
         //extent.Add(new Vector2(x, y));
 
         Debug.Log("avgAbove " + avgAboveWater);
-        while(true)
+
+        extent.GrowFrom(extent.origin, (height) => height > avgAboveWater, heightMap);
+        
+        /*while(true)
         {
             bool atLeastOne = false;
             for (int offsetX = -range; offsetX <= +range; ++offsetX)
             {
                 for (int offsetY = -range; offsetY <= +range; ++offsetY)
                 {
+                    // Make sure we are only checking the outer ring of the growing grid
                     if (offsetX == -range || offsetX == +range ||
                         offsetY == -range || offsetY == +range)
                     {
                         int indX = x + offsetX;
                         int indY = y + offsetY;
+
+                        if (indX < 0 || indX >= width || indY < 0 || indY >= height)
+                            continue;
 
                         if (heightMap[indX, indY] > avgAboveWater)
                         {
@@ -490,14 +500,17 @@ public class World : MonoBehaviour
                 }
             }
 
-            if (range >= 2 || atLeastOne == false)
+            if (range >= 100 || atLeastOne == false)
                 break;
 
             ++range;
         }
-
+        Debug.Log("range " + range);
+        */
+        
         return extent.toArrayList();
 	}
+
 
 
 	public int averageHeightAboveWater(int waterLevel)
@@ -524,13 +537,14 @@ public class World : MonoBehaviour
 
 
     /// Grid for storing (atm) mountain extent data
-    protected class Grid
+    public class Grid
     {
         // GridNodes are indexed by their "local" offset from the Grid origin, e.g. -1, 1.
         Dictionary<Vector2, GridNode> elements;
 
         int originX, originY;
 
+        public GridNode origin { get; protected set; }
 
         static Vector2 NW = new Vector2(-1, -1);
         static Vector2 NORTH = new Vector2(0, -1);
@@ -547,10 +561,11 @@ public class World : MonoBehaviour
             originX = x;
             originY = y;
             elements = new Dictionary<Vector2, GridNode>();
+            origin = new GridNode(x, y, 0, 0, height);
 
             elements.Add(
                 new Vector2(0, 0),
-                new GridNode(x, y, 0, 0, height)
+                origin
                 );
         }
 
@@ -559,9 +574,9 @@ public class World : MonoBehaviour
         public void addNode(int offsetX, int offsetY, int height)
         {
             Vector2 nodePos = new Vector2(offsetX, offsetY);
-            GridNode addedNode = new GridNode(originX + offsetX, originY + offsetY, offsetX, offsetY, height);
-            elements.Add(nodePos, addedNode);
-            
+            GridNode newNode = new GridNode(originX + offsetX, originY + offsetY, offsetX, offsetY, height);
+            int numNeighbours = 0;
+
             foreach (Vector2 direction in Grid.compassDirections)
             {
                 GridNode neighbour;
@@ -569,11 +584,15 @@ public class World : MonoBehaviour
                 if (elements.TryGetValue(neighbourPos, out neighbour))
                 {
                     //Debug.Log(nodePos.ToString() + " neighbour at " + neighbourPos.ToString());
-                    addedNode.addNeighbour(direction, neighbour);
+                    newNode.addNeighbour(direction, neighbour);
                     //Debug.Log("Adding reciprocal " + neighbourPos.ToString() + " in " + (-direction).ToString());
-                    neighbour.addNeighbour(-direction, addedNode);
+                    neighbour.addNeighbour(-direction, newNode);
+                    ++numNeighbours;
                 }
             }
+
+            if (numNeighbours > 0)
+                elements.Add(nodePos, newNode);
         }
 
 
@@ -583,15 +602,71 @@ public class World : MonoBehaviour
             foreach (GridNode g in elements.Values)
             {
                 list.Add(new Vector2(g.globalX, g.globalY));
-                Debug.Log(g.toString());
+                //Debug.Log(g.toString());
             }
 
             return list;
         }
 
+        /**
+         * GridNode node has already been added to the Grid.
+         */
+        public void GrowFrom(GridNode node, Predicate<int> condition, int[,] heightMap)
+        {
+            int offsetX = node.localX;
+            int offsetY = node.localY;
+            Vector2 nodePos = new Vector2(offsetX, offsetY);
+
+            // Try to add all neighbours meeting the condition
+            foreach (Vector2 direction in compassDirections)
+            {
+                Vector2 neighPos = nodePos + direction;
+                int xpos = originX + (int)neighPos.x;
+                int ypos = originY + (int)neighPos.y;
+                int height = heightMap[xpos, ypos];
+                
+                if (condition(height))
+                {
+                    GridNode neighbour;
+                    // If the neighbour doesn't already exist add new node
+                    if (elements.TryGetValue(neighPos, out neighbour) == false)
+                    {
+                        neighbour = new GridNode(
+                            originX + (int)neighPos.x,
+                            originY + (int)neighPos.y,
+                            (int)neighPos.x,
+                            (int)neighPos.y,
+                            height);
+                        addNode(neighbour.localX, neighbour.localY, height);
+
+                        // Set the current node's neighbour reference
+                        node.addNeighbour(direction, neighbour);
+                        // Set the neighbour's reference
+                        neighbour.addNeighbour(-direction, node);
+
+                        //Debug.Log("Added " + neighbour.localX + ", " + neighbour.localY);
+
+                        // Grow from the new neighbour
+                        GrowFrom(neighbour, condition, heightMap);
+                    }
+                    else // Otherwise ensure that the neighbour references are correct
+                    {
+                        // Set the current node's neighbour reference
+                        node.addNeighbour(direction, neighbour);
+                        // Set the neighbour's reference
+                        neighbour.addNeighbour(-direction, node);
+                    }
+                }
+            }
+            //Debug.Log(node.toString());
+        }
 
 
-        protected class GridNode
+        
+        //----------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------
+        public class GridNode
         {
             GridNode[] neighbours;
 
