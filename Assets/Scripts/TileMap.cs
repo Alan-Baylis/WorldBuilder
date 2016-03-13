@@ -88,11 +88,13 @@ public class TileMap : MonoBehaviour {
 
         if (mount)
         {
-            Debug.Log("Coloring mountain");
+            
             ArrayList mountain = world.getMountain(64, 32, waterLevel);
+            //Debug.Log("Coloring mountain " + mountain.Count);
             foreach (Vector2 loc in mountain)
             {
                 texture.SetPixel((int)loc.x, (int)loc.y, Color.magenta);
+                //Debug.Log((int)loc.x + ", " + (int)loc.y);
             } 
 
         }
@@ -129,7 +131,7 @@ public class TileMap : MonoBehaviour {
 				vertices[ z * vsize_x + x ] = new Vector3( x*tileSize, 0, z*tileSize );
 				normals[ z * vsize_x + x ] = Vector3.up;
 				//uv[ z * vsize_x + x ] = new Vector2( (float)x / vsize_x, (float)z / vsize_z );
-                uv[z * vsize_x + x] = new Vector2((float)x / size_x, (float)z / size_z);
+                uv[z * vsize_x + x] = new Vector2((float)x / size_x, 1f - (float)z / size_z);
 			}
 		}
 		//Debug.Log ("Done Verts!");

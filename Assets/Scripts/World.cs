@@ -522,11 +522,12 @@ public class World : MonoBehaviour
         extent.GrowFrom(extent.origin, (height) => height > 200, heightMap);
 
         // Shrink the mountain
-        // Head north until reaching an edge
+        // Head south until reaching an edge
         Grid.GridNode current = extent.origin;
+        Vector2 dir = Grid.NORTH;
         while (true)
         {
-            tmp = extent.travel(current, Grid.NORTH);
+            tmp = extent.travel(current, dir);
             if (tmp != null)
                 current = tmp;
             else
@@ -535,10 +536,35 @@ public class World : MonoBehaviour
 
         Grid.GridNode start = current;
         // Go around the edge of the mountain
-        while (true)
+        Debug.Log("Start " + start.localX + ", " + start.localY);
+        //Debug.Log(start.toString());
+        int count = 0;
+        Vector2 clockwiseDir = Grid.EAST;
+        do
         {
-            
-        }
+            clockwiseDir = current.GetClockwise(clockwiseDir);
+            //Debug.Log("Clockwise " + clockwiseDir.ToString());
+            Grid.GridNode clockwiseNode = extent.travel(current, clockwiseDir);
+            Debug.Log("Next " + clockwiseNode.ToString());
+            current = clockwiseNode;
+
+            /*if(current.localX == -1 && current.localY == -3)
+            {
+                Vector2 dfrom = -clockwiseDir;
+                int index = Grid.GridNode.DirectionToIndex(dfrom);
+                Debug.Log("From " + dfrom.ToString() + ": " + index);
+
+                for (int i = index + 1; i != index; i = ++i % 8)
+                {
+                    Vector2 nextdir = Grid.compassDirections[i];
+                    Debug.Log(i + ": " + nextdir);
+                    Grid.GridNode next = current.GetNeighbour(nextdir);
+                    Debug.Log(next == null ? "Null" : next.ToString());
+                }
+                return;
+            }*/
+        } while (++count < 30 && current.Equals(start) == false);
+        
     }
 
 
@@ -805,7 +831,9 @@ public class World : MonoBehaviour
 
             public GridNode GetNeighbour(Vector2 direction)
             {
-                return neighbours[DirectionToIndex(direction)];
+                int ind = DirectionToIndex(direction);
+                Debug.Log("DTI " + ind);
+                return neighbours[ind];
             }
 
             public bool HasNeighbour(Vector2 direction)
@@ -835,21 +863,31 @@ public class World : MonoBehaviour
                 return -1;
             }
 
-            public GridNode TravelClockwise(Vector2 directionFrom)
+            public Vector2 GetClockwise(Vector2 directionFrom)
             {
-                int dirIndex = DirectionToIndex(directionFrom);
-                dirIndex = dirIndex + 2 % 8; // dirIndex + 1 would be accesable from the current node
+                // directionFrom is from the pespective of the originating / "from" node so to 
+                // to the perspective of this node we need to reverse it.
+                //int dFromI = DirectionToIndex(directionFrom);
+                // Have we hit a "wall"
+                //int nextCW = (dFromI + 1) % 8;
+                //int prevCW = dFromI - 1 < 0 ? 7 : dFromI - 1;
+                //Debug.Log("Going " + directionFrom + ": coming " + -directionFrom);
+                int dirIndex = DirectionToIndex(-directionFrom);
+                dirIndex = (dirIndex + 2) % 8; // dirIndex + 1 would be accesable from the originating node so skip it
+                //Debug.Log("Testing " + compassDirections[dirIndex].ToString());
                 while (this.HasNeighbour(compassDirections[dirIndex]) == false)
                 {
                     ++dirIndex;
+                    dirIndex %= 8;
+                    //Debug.Log("Testing " + compassDirections[dirIndex].ToString());
                 }
-                return neighbours[dirIndex];
+                return compassDirections[dirIndex];
             }
 
 
 
-
-            public string toString()
+            
+            public override string ToString()
             {
                 int numNeighbours = 0;
                 foreach (GridNode g in this.neighbours)
